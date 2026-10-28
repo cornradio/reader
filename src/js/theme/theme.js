@@ -20,11 +20,29 @@ const triggerCallback = function (isLight) {
   });
 };
 
+const PRESETS = {
+  light: { chrome: 'light', text: '#000000', background: '#ffffff' },
+  sepia: { chrome: 'light', text: '#5b4636', background: '#f4ecd8' },
+  green: { chrome: 'light', text: '#1b3a28', background: '#d7ead2' },
+  gray: { chrome: 'light', text: '#2c2c2c', background: '#e6e6e6' },
+  dark: { chrome: 'dark', text: '#ffffff', background: '#000000' },
+  night: { chrome: 'dark', text: '#d7cbb8', background: '#1c1814' },
+  ocean: { chrome: 'dark', text: '#d5e6f2', background: '#0d1b26' },
+  ink: { chrome: 'dark', text: '#e4dcc8', background: '#10141c' },
+};
+
 let currentTheme = 'dark';
 let autoUseLight = false;
 let lastTheme = null;
+const chromeOf = function () {
+  const preset = PRESETS[currentTheme];
+  if (preset) return preset.chrome;
+  if (currentTheme === 'light') return 'light';
+  if (currentTheme === 'auto' && autoUseLight) return 'light';
+  return 'dark';
+};
 const updateTheme = function () {
-  const useLightTheme = currentTheme === 'light' || currentTheme === 'auto' && autoUseLight;
+  const useLightTheme = chromeOf() === 'light';
   if (useLightTheme === lastTheme) return;
   lastTheme = useLightTheme;
   triggerCallback(useLightTheme);
@@ -36,16 +54,20 @@ const updateAutoTheme = function (useLightTheme) {
 const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
 updateAutoTheme(mediaQuery.matches);
 mediaQuery.addListener(event => { updateAutoTheme(event.matches); });
-const updateConfigTheme = theme => {
-  currentTheme = theme;
+const updateConfigTheme = (name, applyColors) => {
+  currentTheme = name || 'auto';
   updateTheme();
+  const preset = applyColors ? PRESETS[currentTheme] : null;
+  if (!preset) return;
+  const prefix = preset.chrome === 'light' ? 'light' : 'dark';
+  config.set(prefix + '_text', preset.text);
+  config.set(prefix + '_background', preset.background);
 };
-config.addListener('theme', updateConfigTheme);
-config.get('theme', 'auto').then(updateConfigTheme);
+config.addListener('theme', name => { updateConfigTheme(name, true); });
+config.get('theme', 'auto').then(name => { updateConfigTheme(name, false); });
 
 theme.getCurrent = function () {
-  const useLightTheme = currentTheme === 'light' || currentTheme === 'auto' && autoUseLight;
-  return useLightTheme ? 'light' : 'dark';
+  return chromeOf();
 };
 
 theme.addChangeListener = function (callback) {

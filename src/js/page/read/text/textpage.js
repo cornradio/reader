@@ -29,6 +29,7 @@ export default class TextPage {
 
     this.container = this.createContainer();
     await this.updateStyleConfig();
+    this.bindColorListener();
     this.readPage.container.prepend(this.container);
 
     // EXPERT_CONFIG Use 4th / 5th button for paging
@@ -44,6 +45,7 @@ export default class TextPage {
   }
   async onInactivate() {
     this.isCurrent = false;
+    this.unbindColorListener();
 
     document.removeEventListener('keydown', this.keyboardEvents);
     document.removeEventListener('wheel', this.wheelEvents);
@@ -97,6 +99,20 @@ export default class TextPage {
     // rendered, which is a circular. So, this would be the best I can do here.
     // Hopefully it works.
     return this.ignoreSpaces(this.readPage.getRawCursor());
+  }
+  bindColorListener() {
+    if (this.colorListener) return;
+    this.colorListener = () => { this.updateStyleConfig(); };
+    ['light_text', 'light_background', 'dark_text', 'dark_background'].forEach(key => {
+      config.addListener(key, this.colorListener);
+    });
+  }
+  unbindColorListener() {
+    if (!this.colorListener) return;
+    ['light_text', 'light_background', 'dark_text', 'dark_background'].forEach(key => {
+      config.removeListener(key, this.colorListener);
+    });
+    this.colorListener = null;
   }
   async updateStyleConfig() {
     this.customFont = document.querySelector('#custom_font');

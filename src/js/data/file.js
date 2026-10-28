@@ -50,6 +50,10 @@ file.content = async function (id) {
   return storage.files.getContent(id);
 };
 
+file.setContent = async function (id, content) {
+  return storage.files.setContent(content, id);
+};
+
 file.remove = async function (id) {
   return storage.files.remove(id);
 };

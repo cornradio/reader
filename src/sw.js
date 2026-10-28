@@ -7,7 +7,7 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-const version = /* VERSION */"20250127"/* VERSION */; // eslint-disable-line quotes
+const version = /* VERSION */"20261027d"/* VERSION */; // eslint-disable-line quotes
 
 const resourceList = [
   './help/about.html',
@@ -96,11 +96,17 @@ const cacheFiles = async function () {
 };
 
 self.addEventListener('install', function (event) {
+  self.skipWaiting();
   event.waitUntil(cacheFiles());
+});
+
+self.addEventListener('activate', function (event) {
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', function (event) {
   const url = new URL(event.request.url);
+  if (url.pathname.endsWith('/api/fetch')) return;
   if (event.request.method === 'GET') {
     if (url.href === new URL('?version', location.href).href) {
       const versionText = `/* VERSION */${JSON.stringify(version)}/* VERSION */`;

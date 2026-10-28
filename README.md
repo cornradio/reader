@@ -1,6 +1,14 @@
 # tReader
 
-https://tiansh.github.io/reader
+基于 [tiansh/reader](https://github.com/tiansh/reader) 的本地修改。除了原来的本地 TXT，还可以打开在线网址：纯文本会按原文阅读，网页会抽成正文。下载由本机 `server.js` 代为请求，避免浏览器跨域拦截。
+
+```powershell
+node server.js
+```
+
+浏览器打开 http://127.0.0.1:4173/ ，点左上角加号，选择「打开网址」。也可以直接访问 `http://127.0.0.1:4173/?url=https://example.com/book.txt`。
+
+原版在线演示：https://tiansh.github.io/reader
 
 又一个 TXT 文本阅读器：支持按词语的繁简转换，及利用浏览器内置语音朗读，阅读功能全面；配色字体到其他排版布局高度可定制化；同时界面简洁帮助阅读免于打扰。
 

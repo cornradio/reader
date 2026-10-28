@@ -305,6 +305,74 @@ export default class ReadPage extends Page {
     this.subPages.forEach(page => page.cursorChange(cursor, config));
     this.speech.cursorChange(cursor, config);
   }
+  async rename(title) {
+    this.meta.title = title;
+    await file.setMeta(this.meta);
+    this.router.setTitle(title, this.getLang());
+    this.controlPage.setBookTitle(title);
+  }
+  textEditCursors() {
+    const bookmarks = Array.isArray(this.index?.bookmarks) ? this.index.bookmarks : [];
+    const items = Array.isArray(this.index?.content?.items) ? this.index.content.items : [];
+    const cursor = this.getRenderCursor() ?? this.meta.cursor ?? 0;
+    return {
+      bookmarks,
+      items,
+      cursors: [
+        cursor,
+        ...bookmarks.map(item => item.cursor || 0),
+        ...items.map(item => item.cursor || 0),
+      ],
+    };
+  }
+  async applyEditedContent(text, cursors, bookmarks, items) {
+    bookmarks.forEach((item, index) => {
+      item.cursor = cursors[index + 1];
+    });
+    items.forEach((item, index) => {
+      item.cursor = cursors[index + 1 + bookmarks.length];
+    });
+    this.meta.cursor = cursors[0];
+    this.meta.length = text.length;
+    await file.setContent(this.articleId, text);
+    await file.setMeta(this.meta);
+    if (this.index) await file.setIndex(this.index);
+    await this.onUpdate({ id: this.articleId });
+  }
+  async stripBlankLines() {
+    const { bookmarks, items, cursors } = this.textEditCursors();
+    const collapsed = collapseBlankLines(this.content, cursors);
+    if (!collapsed.removed || !collapsed.text) {
+      alert(i18n.getMessage('readStripBlankNone'));
+      return;
+    }
+    if (!confirm(i18n.getMessage('readStripBlankConfirm', collapsed.removed))) return;
+    try {
+      await this.applyEditedContent(collapsed.text, collapsed.cursors, bookmarks, items);
+      alert(i18n.getMessage('readStripBlankDone', collapsed.removed));
+    } catch (e) {
+      alert(i18n.getMessage('readStripBlankFail'));
+    }
+  }
+  async replaceText(find, replacement) {
+    if (!find) {
+      alert(i18n.getMessage('readReplaceEmpty'));
+      return;
+    }
+    const { bookmarks, items, cursors } = this.textEditCursors();
+    const replaced = replaceAllText(this.content, find, replacement, cursors);
+    if (!replaced.count) {
+      alert(i18n.getMessage('readReplaceNone'));
+      return;
+    }
+    if (!confirm(i18n.getMessage('readReplaceConfirm', replaced.count, find, replacement))) return;
+    try {
+      await this.applyEditedContent(replaced.text, replaced.cursors, bookmarks, items);
+      alert(i18n.getMessage('readReplaceDone', replaced.count));
+    } catch (e) {
+      alert(i18n.getMessage('readReplaceFail'));
+    }
+  }
   getContent() { return this.content; }
   getMeta() { return this.meta; }
   getLang() { return this.langTag; }
@@ -340,5 +408,69 @@ export default class ReadPage extends Page {
     document.body.removeChild(link);
     setTimeout(() => { URL.revokeObjectURL(url); }, 10e3);
   }
+}
+
+function collapseBlankLines(text, cursors) {
+  const lines = text.split('\n');
+  const mapped = cursors.map(cursor => ({ cursor, value: 0, done: false }));
+  let output = '';
+  let source = 0;
+  let removed = 0;
+  const assign = (start, end, base, lineLength) => {
+    mapped.forEach(item => {
+      if (item.done || item.cursor < start || item.cursor >= end) return;
+      const offset = item.cursor - start;
+      item.value = base + Math.min(offset, lineLength);
+      item.done = true;
+    });
+  };
+  lines.forEach((line, index) => {
+    const size = line.length + (index < lines.length - 1 ? 1 : 0);
+    const end = source + size;
+    const trailingSplit = index === lines.length - 1 && text.endsWith('\n') && line === '';
+    if (/^\s*$/.test(line) && !trailingSplit) {
+      removed++;
+      assign(source, end, output.length, 0);
+    } else {
+      const base = output ? output.length + 1 : 0;
+      assign(source, end, base, line.length);
+      if (output) output += '\n';
+      output += line;
+    }
+    source = end;
+  });
+  mapped.forEach(item => {
+    if (!item.done) item.value = output.length;
+  });
+  return { text: output, cursors: mapped.map(item => item.value), removed };
+}
+
+function replaceAllText(text, find, replacement, cursors) {
+  const mapped = cursors.map(cursor => ({ cursor, value: 0, done: false }));
+  let output = '';
+  let index = 0;
+  let count = 0;
+  const assign = (start, end, mapAt) => {
+    mapped.forEach(item => {
+      if (item.done || item.cursor < start || item.cursor >= end) return;
+      item.value = mapAt(item.cursor);
+      item.done = true;
+    });
+  };
+  while (index <= text.length) {
+    const found = text.indexOf(find, index);
+    const end = found === -1 ? text.length : found;
+    assign(index, end, cursor => output.length + (cursor - index));
+    output += text.slice(index, end);
+    if (found === -1) break;
+    assign(found, found + find.length, () => output.length);
+    output += replacement;
+    count++;
+    index = found + find.length;
+  }
+  mapped.forEach(item => {
+    if (!item.done) item.value = output.length;
+  });
+  return { text: output, cursors: mapped.map(item => item.value), count };
 }
 

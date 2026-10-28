@@ -42,6 +42,15 @@ export default class Router {
   }
   async initial() {
     this.setTitle();
+    const current = new URL(location.href);
+    const incoming = current.searchParams.get('url');
+    if (incoming) {
+      current.searchParams.delete('url');
+      history.replaceState(null, '', current.pathname + current.search + current.hash);
+      const page = await this.hashTo('#!' + this.fallback);
+      if (page && page.importUrl) await page.importUrl(incoming);
+      return;
+    }
     const path = await config.get('path', '#!' + this.fallback);
     this.hashTo(path);
   }

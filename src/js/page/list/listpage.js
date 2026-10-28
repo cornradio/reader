@@ -31,6 +31,15 @@ export default class ListPage extends Page {
     headerRef.get('left').appendChild(this.addButton);
     headerRef.get('right').appendChild(this.configButton);
 
+    this.addMenu = new Menu({
+      groups: [[
+        { title: i18n.getMessage('listAddFile'), value: 'file' },
+        { title: i18n.getMessage('listAddUrl'), value: 'url' },
+      ], [{
+        title: i18n.getMessage('listSortCancel'),
+      }]],
+    });
+
     /** @type {HTMLInputElement} */
     this.fileButton = document.querySelector('#file');
 
@@ -45,6 +54,10 @@ export default class ListPage extends Page {
     this.sortButton = this.fileListContainer.querySelector('.list-sort button');
     this.sortContent = this.fileListContainer.querySelector('.list-sort-content');
     this.importTip = document.querySelector('#import_tip');
+    this.importTipText = this.importTip.querySelector('[data-i18n]');
+    this.urlDialog = document.querySelector('#url_dialog');
+    this.urlInput = document.querySelector('#url_input');
+    this.urlInput.placeholder = i18n.getMessage('listOpenUrlPlaceholder');
 
     this.searchInput.placeholder = i18n.getMessage('listSearchPlaceholder');
     this.searchClearButton.classList.add('list-filter-clear');
@@ -79,8 +92,22 @@ export default class ListPage extends Page {
     this.clearList();
   }
   initialListener() {
-    this.addButton.addEventListener('click', event => {
-      this.fileButton.click();
+    this.addMenu.bind(this.addButton, value => {
+      if (value === 'file') this.fileButton.click();
+      else if (value === 'url') this.openUrlDialog();
+    });
+    this.urlDialog.addEventListener('submit', event => {
+      event.preventDefault();
+      this.importUrl(this.urlInput.value);
+    });
+    this.urlDialog.querySelector('#url_cancel').addEventListener('click', () => {
+      this.closeUrlDialog();
+    });
+    this.urlDialog.querySelector('.url-dialog-cover').addEventListener('click', () => {
+      this.closeUrlDialog();
+    });
+    this.urlDialog.addEventListener('keydown', event => {
+      if (event.key === 'Escape') this.closeUrlDialog();
     });
     this.fileButton.addEventListener('change', async event => {
       const files = this.fileButton.files;
@@ -142,26 +169,114 @@ export default class ListPage extends Page {
       this.updateList();
     });
   }
-  /** @param {File} item */
-  async importFile(item) {
+  openUrlDialog() {
+    this.urlDialog.hidden = false;
+    this.urlInput.value = '';
+    this.urlInput.focus();
+  }
+  closeUrlDialog() {
+    this.urlDialog.hidden = true;
+  }
+  normalizeUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+    let url;
+    try {
+      url = new URL(withScheme);
+    } catch (e) {
+      return null;
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.href;
+  }
+  async fetchRemote(url) {
+    const api = new URL('api/fetch', location.href);
+    api.searchParams.set('url', url);
+    let response;
+    try {
+      response = await fetch(api);
+    } catch (e) {
+      throw new Error(i18n.getMessage('listUrlErrorFetch'));
+    }
+    const type = response.headers.get('content-type') || '';
+    if (!type.includes('json')) throw new Error(i18n.getMessage('listUrlErrorServer'));
+    const data = await response.json();
+    if (!response.ok) {
+      const key = {
+        url: 'listUrlErrorUrl',
+        fetch: 'listUrlErrorFetch',
+        size: 'listUrlErrorSize',
+        type: 'listUrlErrorType',
+        empty: 'listUrlErrorEmpty',
+      }[data.error] || 'listOpenUrlFail';
+      const message = i18n.getMessage(key);
+      throw new Error(data.detail ? `${message}\n${data.detail}` : message);
+    }
+    if (!data.content) throw new Error(i18n.getMessage('listUrlErrorEmpty'));
+    return data;
+  }
+  /**
+   * @param {string} rawTitle
+   * @param {string} rawContent
+   * @param {{ open?: boolean, failMessage?: string }} [options]
+   */
+  async importText(rawTitle, rawContent, options = {}) {
     let result = null;
     try {
       this.importTip.style.display = 'block';
-      const raw_content = await text.readFile(item);
-      const content = await text.preprocess(raw_content);
-      const raw_title = text.parseFilename(item.name);
-      const title = await text.preprocess(raw_title);
+      const content = await text.preprocess(rawContent);
+      const title = await text.preprocess(rawTitle);
       result = await file.add({ title, content });
       await text.guessContent(content, result);
     } catch (e) {
-      alert(i18n.getMessage('listImportFail'));
+      alert(options.failMessage || i18n.getMessage('listImportFail'));
     } finally {
+      this.importTipText.textContent = i18n.getMessage('listImportTip');
       this.importTip.style.display = 'none';
       this.clearSearch();
-      this.updateList();
+      await this.updateList();
       this.scrollToList();
     }
+    if (result && options.open) this.router.go('read', { id: result.id });
     return result;
+  }
+  /** @param {string} value */
+  async importUrl(value) {
+    const url = this.normalizeUrl(value);
+    if (!url) {
+      alert(i18n.getMessage('listUrlErrorUrl'));
+      return null;
+    }
+    this.closeUrlDialog();
+    this.importTipText.textContent = i18n.getMessage('listImportUrlTip');
+    this.importTip.style.display = 'block';
+    let remote;
+    try {
+      remote = await this.fetchRemote(url);
+    } catch (e) {
+      this.importTipText.textContent = i18n.getMessage('listImportTip');
+      this.importTip.style.display = 'none';
+      alert(e.message || i18n.getMessage('listOpenUrlFail'));
+      return null;
+    }
+    return this.importText(remote.title || url, remote.content, {
+      open: true,
+      failMessage: i18n.getMessage('listOpenUrlFail'),
+    });
+  }
+  /** @param {File} item */
+  async importFile(item) {
+    let rawContent;
+    try {
+      this.importTip.style.display = 'block';
+      rawContent = await text.readFile(item);
+    } catch (e) {
+      this.importTip.style.display = 'none';
+      alert(i18n.getMessage('listImportFail'));
+      return null;
+    }
+    return this.importText(text.parseFilename(item.name), rawContent);
   }
   scrollToList() {
     if (!this.active) return;

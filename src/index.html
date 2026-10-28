@@ -70,6 +70,17 @@ defined by the Mozilla Public License, v. 2.0.
         <div class="tip-cover"></div>
         <div class="tip-content"><span data-i18n="listImportTip"></span></div>
       </div>
+      <div id="url_dialog" class="url-dialog" hidden>
+        <div class="url-dialog-cover"></div>
+        <form class="url-dialog-panel" action="#">
+          <div class="url-dialog-title" data-i18n="listOpenUrlTitle"></div>
+          <input id="url_input" class="url-dialog-input" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocomplete="url" />
+          <div class="url-dialog-actions">
+            <button type="button" id="url_cancel" data-i18n="listSortCancel"></button>
+            <button type="submit" id="url_open" data-i18n="listOpenUrlConfirm"></button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
   <div class="page" id="read_page">
@@ -180,6 +191,29 @@ defined by the Mozilla Public License, v. 2.0.
       </div>
     </div>
   </div>
+</div>
+<div id="title_dialog" class="url-dialog" hidden>
+  <div class="url-dialog-cover"></div>
+  <form class="url-dialog-panel" action="#">
+    <div class="url-dialog-title" data-i18n="readRenameTitle"></div>
+    <input id="title_input" class="url-dialog-input" type="text" enterkeyhint="done" autocomplete="off" />
+    <div class="url-dialog-actions">
+      <button type="button" id="title_cancel" data-i18n="listSortCancel"></button>
+      <button type="submit" id="title_save" data-i18n="readRenameSave"></button>
+    </div>
+  </form>
+</div>
+<div id="replace_dialog" class="url-dialog" hidden>
+  <div class="url-dialog-cover"></div>
+  <form class="url-dialog-panel" action="#">
+    <div class="url-dialog-title" data-i18n="readReplaceTitle"></div>
+    <input id="replace_find" class="url-dialog-input" type="text" enterkeyhint="next" autocomplete="off" />
+    <input id="replace_with" class="url-dialog-input" type="text" enterkeyhint="done" autocomplete="off" />
+    <div class="url-dialog-actions">
+      <button type="button" id="replace_cancel" data-i18n="listSortCancel"></button>
+      <button type="submit" id="replace_save" data-i18n="buttonReplace"></button>
+    </div>
+  </form>
 </div>
 <div id="screen_menu" class="screen-menu" role="dialog" aria-modal="true">
   <div class="backdrop"></div>

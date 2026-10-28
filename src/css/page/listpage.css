@@ -184,3 +184,87 @@ button.list-sort {
   padding: 20px 0;
 }
 
+.url-dialog[hidden] {
+  display: none;
+}
+
+.url-dialog {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+}
+
+.url-dialog-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--alert-cover-background);
+}
+
+.url-dialog-panel {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 22px 18px 16px;
+  background: var(--menu-background);
+  color: var(--menu-color);
+  border-radius: 16px;
+}
+
+.url-dialog-title {
+  font-size: 20px;
+  line-height: 28px;
+  margin-bottom: 14px;
+}
+
+.url-dialog-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--search-background);
+  color: var(--default-color);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 10px 12px;
+}
+
+.url-dialog-input + .url-dialog-input {
+  margin-top: 10px;
+}
+
+.url-dialog-input:focus {
+  outline: 2px solid var(--active-color);
+  border-color: transparent;
+}
+
+.url-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.url-dialog-actions button {
+  font-size: 18px;
+  line-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  color: var(--active-color);
+}
+
+.url-dialog-actions button[type="submit"] {
+  background: var(--active-color);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+

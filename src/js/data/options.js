@@ -345,7 +345,13 @@ const options = (factory => {
     select: [
       { value: 'auto', text: i18n.getMessage('configThemeAuto') },
       { value: 'light', text: i18n.getMessage('configThemeLight') },
+      { value: 'sepia', text: i18n.getMessage('configThemeSepia') },
+      { value: 'green', text: i18n.getMessage('configThemeGreen') },
+      { value: 'gray', text: i18n.getMessage('configThemeGray') },
       { value: 'dark', text: i18n.getMessage('configThemeDark') },
+      { value: 'night', text: i18n.getMessage('configThemeNight') },
+      { value: 'ocean', text: i18n.getMessage('configThemeOcean') },
+      { value: 'ink', text: i18n.getMessage('configThemeInk') },
     ],
     default: 'auto',
   })],

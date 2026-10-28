@@ -222,7 +222,8 @@ button.submit-button .icon-go {
   z-index: 9;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: safe flex-end;
+  overflow-y: auto;
 }
 
 .backdrop {

@@ -1,0 +1,8 @@
+{
+  "name": "treader",
+  "private": true,
+  "description": "tReader fork that can open text and web pages from a URL",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
